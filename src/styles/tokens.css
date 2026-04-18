@@ -1,0 +1,21 @@
+:root {
+  color-scheme: light;
+  --bg: #efede8;
+  --bg-accent: #e5e0d8;
+  --panel: rgba(255, 255, 255, 0.78);
+  --panel-strong: rgba(255, 255, 255, 0.96);
+  --panel-muted: rgba(246, 244, 240, 0.92);
+  --text: #1f1d19;
+  --muted: #6d6a63;
+  --border: rgba(31, 29, 25, 0.08);
+  --border-strong: rgba(31, 29, 25, 0.14);
+  --accent: #5d6a72;
+  --accent-soft: rgba(93, 106, 114, 0.14);
+  --shadow-lg: 0 24px 60px rgba(31, 29, 25, 0.09);
+  --shadow-sm: 0 10px 30px rgba(31, 29, 25, 0.06);
+  --radius-xl: 28px;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --font-sans: "SF Pro Display", "Segoe UI", "Helvetica Neue", sans-serif;
+}
