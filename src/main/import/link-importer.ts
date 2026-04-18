@@ -10,6 +10,7 @@ export interface LinkImportResult {
   title: string;
   body: string;
   imageUrls: string[];
+  sourceTags: string[];
   importStatus: "full" | "partial" | "link_only";
 }
 
@@ -33,6 +34,7 @@ export class LinkImporter {
       title: parsed.title,
       body: parsed.body,
       imageUrls: parsed.imageUrls,
+      sourceTags: parsed.sourceTags,
       importStatus,
     };
   }

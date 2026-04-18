@@ -182,6 +182,10 @@ a {
   justify-content: flex-end;
 }
 
+.hero-actions--start {
+  justify-content: flex-start;
+}
+
 .filter-chip {
   border: 1px solid var(--border);
   background: var(--panel-strong);
@@ -297,6 +301,13 @@ a {
   gap: 18px;
 }
 
+.detail-card--nested {
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: none;
+  background: var(--panel-strong);
+}
+
 .detail-card h1 {
   margin: 0;
   font-size: clamp(2rem, 2.5vw, 3rem);
@@ -329,6 +340,61 @@ a {
   font-weight: 600;
 }
 
+.save-state {
+  color: var(--accent);
+  font-weight: 600;
+  align-self: center;
+}
+
+.asset-list {
+  display: grid;
+  gap: 12px;
+}
+
+.asset-row {
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 16px 18px;
+  background: var(--panel-strong);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.asset-row h2 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.asset-row p {
+  margin: 0;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.asset-preview-image {
+  width: min(100%, 420px);
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.asset-preview-text {
+  margin: 0;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.45);
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @media (max-width: 980px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -340,5 +406,12 @@ a {
 
   .library-title-row {
     flex-direction: column;
+  }
+
+  .asset-row,
+  .detail-grid {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

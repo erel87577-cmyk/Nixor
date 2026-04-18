@@ -16,6 +16,8 @@ export interface SourcePostRecord {
   body: string;
   coverImageAssetId: string | null;
   authorName: string;
+  sourceTags: string[];
+  userTags: string[];
   tags: string[];
   notes: string;
   importStatus: ImportStatus;

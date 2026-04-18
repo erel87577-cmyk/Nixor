@@ -32,4 +32,9 @@ export class AssetStore {
       originalFilename: safeOriginalFilename,
     };
   }
+
+  async readAsDataUrl(storagePath: string, mimeType: string) {
+    const bytes = await fs.readFile(storagePath);
+    return `data:${mimeType};base64,${bytes.toString("base64")}`;
+  }
 }

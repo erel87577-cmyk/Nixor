@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { LibraryPage } from "@/features/library/LibraryPage";
@@ -9,12 +10,14 @@ describe("library page", () => {
     const user = userEvent.setup();
 
     render(
-      <LibraryPage
-        initialItems={[
-          { id: "1", title: "Post A", authorName: "Alice", tags: ["fantasy"] },
-          { id: "2", title: "Post B", authorName: "Bob", tags: ["modern"] },
-        ]}
-      />,
+      <MemoryRouter>
+        <LibraryPage
+          initialItems={[
+            { id: "1", title: "Post A", authorName: "Alice", tags: ["fantasy"] },
+            { id: "2", title: "Post B", authorName: "Bob", tags: ["modern"] },
+          ]}
+        />
+      </MemoryRouter>,
     );
 
     await user.type(screen.getByPlaceholderText("Search posts, assets, authors, tags"), "Alice");

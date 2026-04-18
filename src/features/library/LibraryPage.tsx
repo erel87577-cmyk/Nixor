@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { getRendererApi, type LibraryListItem } from "@/renderer/api";
 import { AuthorField } from "@/features/ui/AuthorField";
@@ -124,7 +125,11 @@ export function LibraryPage({ initialItems }: LibraryPageProps) {
 
         {filteredItems.map((item) => (
           <article key={item.id}>
-            <h2>{item.title}</h2>
+            <h2>
+              <Link className="text-link" to={`/posts/${item.id}`}>
+                {item.title}
+              </Link>
+            </h2>
             <div className="library-meta">
               <span>{item.id}</span>
             </div>

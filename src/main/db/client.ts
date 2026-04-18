@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import initSqlJs, { type Database, type SqlJsStatic, type Statement } from "sql.js";
 
-import { schemaSql } from "./schema";
+import { migrate } from "./migrate";
 
 export interface QueryResultRow {
   [key: string]: unknown;
@@ -114,6 +114,6 @@ export async function createDatabaseClient(
   }
 
   const client = createClient(database, options.inMemory ? undefined : options.filePath);
-  client.exec(schemaSql);
+  migrate(client);
   return client;
 }

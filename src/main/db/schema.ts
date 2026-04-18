@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS posts (
   cover_image_asset_id TEXT,
   author_name TEXT NOT NULL DEFAULT '',
   tags_json TEXT NOT NULL DEFAULT '[]',
+  source_tags_json TEXT NOT NULL DEFAULT '[]',
+  user_tags_json TEXT NOT NULL DEFAULT '[]',
   notes TEXT NOT NULL DEFAULT '',
   import_status TEXT NOT NULL DEFAULT 'draft',
   imported_at TEXT NOT NULL,

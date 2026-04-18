@@ -23,7 +23,9 @@ describe("post and asset relations", () => {
       authorName: "cyan",
       body: "A quiet card archive entry",
       sourceUrl: "https://example.com/post/1",
+      sourceTags: ["fantasy", "imported"],
       title: "Archive Source",
+      userTags: ["favorite"],
     });
 
     const firstAsset = await assetService.createAsset({
@@ -47,6 +49,9 @@ describe("post and asset relations", () => {
     expect(detail).not.toBeNull();
     expect(detail?.post.id).toBe(post.id);
     expect(detail?.post.authorName).toBe("cyan");
+    expect(detail?.post.sourceTags).toEqual(["fantasy", "imported"]);
+    expect(detail?.post.userTags).toEqual(["favorite"]);
+    expect(detail?.post.tags).toEqual(["fantasy", "imported", "favorite"]);
     expect(detail?.assets.map((asset: AssetRecord) => asset.id)).toEqual([firstAsset.id, secondAsset.id]);
     expect(detail?.assets[0]).toMatchObject({
       characterName: "Mio",
@@ -73,5 +78,33 @@ describe("post and asset relations", () => {
         storageKey: "assets/ghost.json",
       }),
     ).rejects.toThrow(/post/i);
+  });
+
+  it("updates manual post tags without losing imported source tags", async () => {
+    const db = await createDatabaseClient({ inMemory: true });
+    clients.push(db);
+
+    const postService = createPostService(db);
+
+    const post = await postService.createPost({
+      authorName: "cyan",
+      body: "Archive entry",
+      sourceUrl: "https://example.com/post/2",
+      sourceTags: ["fantasy", "community"],
+      title: "Tag Source",
+      userTags: ["favorite"],
+    });
+
+    const updated = await postService.updatePostMetadata({
+      postId: post.id,
+      authorName: "cyan",
+      userTags: ["favorite", "keeper"],
+      notes: "keep this source around",
+    });
+
+    expect(updated.sourceTags).toEqual(["fantasy", "community"]);
+    expect(updated.userTags).toEqual(["favorite", "keeper"]);
+    expect(updated.tags).toEqual(["fantasy", "community", "favorite", "keeper"]);
+    expect(updated.notes).toBe("keep this source around");
   });
 });

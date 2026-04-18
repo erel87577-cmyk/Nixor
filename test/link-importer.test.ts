@@ -29,6 +29,8 @@ describe("link importer", () => {
             <article>
               <p>This is a longer first post body with enough detail to count as a real import target.</p>
               <img src="https://cdn.example.com/preview.png" />
+              <a rel="tag">Fantasy</a>
+              <span class="tag-chip">Slow Burn</span>
             </article>
           </body>
         </html>
@@ -38,5 +40,6 @@ describe("link importer", () => {
     expect(result.importStatus).toBe("full");
     expect(result.title).toBe("Collected thread");
     expect(result.imageUrls).toEqual(["https://cdn.example.com/preview.png"]);
+    expect(result.sourceTags).toEqual(["Fantasy", "Slow Burn"]);
   });
 });

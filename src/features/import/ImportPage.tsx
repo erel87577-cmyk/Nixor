@@ -7,14 +7,21 @@ import { getRendererApi, type LibraryListItem } from "@/renderer/api";
 export function ImportPage() {
   const [sourceUrl, setSourceUrl] = useState("");
   const [created, setCreated] = useState<LibraryListItem | null>(null);
+  const [statusText, setStatusText] = useState("");
 
-  async function handleCreateDraft() {
+  async function handleImportSource() {
     if (!sourceUrl.trim()) {
       return;
     }
 
-    const result = await getRendererApi().createDraftPost({ sourceUrl: sourceUrl.trim() });
+    setStatusText("Trying to parse the source link...");
+    const result = await getRendererApi().importSourceLink({ sourceUrl: sourceUrl.trim() });
     setCreated(result);
+    setStatusText(
+      result.title === "Untitled import"
+        ? "Automatic parsing fell back to a draft, but the source link was still saved."
+        : "Source imported with parsed metadata.",
+    );
   }
 
   return (
@@ -38,8 +45,8 @@ export function ImportPage() {
           />
         </label>
 
-        <button type="button" className="filter-chip filter-chip--active" onClick={() => void handleCreateDraft()}>
-          Create Draft
+        <button type="button" className="filter-chip filter-chip--active" onClick={() => void handleImportSource()}>
+          Import Source
         </button>
 
         {sourceUrl.length === 0 ? (
@@ -49,6 +56,7 @@ export function ImportPage() {
           />
         ) : created ? (
           <div className="detail-note">
+            <p>{statusText}</p>
             <p>
               <strong>{created.title}</strong>
             </p>
@@ -59,7 +67,8 @@ export function ImportPage() {
           </div>
         ) : (
           <div className="detail-note">
-            Draft preview ready for: <strong>{sourceUrl}</strong>
+            <p>{statusText || "Ready to import this link."}</p>
+            <strong>{sourceUrl}</strong>
           </div>
         )}
       </section>

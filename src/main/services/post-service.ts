@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 
-import { createPostInputSchema, type CreatePostInput } from "@/shared/contracts";
+import {
+  createPostInputSchema,
+  updatePostMetadataSchema,
+  type CreatePostInput,
+  type UpdatePostMetadataInput,
+} from "@/shared/contracts";
 import type { AssetRecord, PostDetail, SourcePostRecord } from "@/shared/domain";
 import type { DatabaseClient } from "@/main/db/client";
 
@@ -21,7 +26,16 @@ function parseJsonArray(value: unknown): string[] {
   }
 }
 
+function mergeTags(...groups: string[][]) {
+  return [...new Set(groups.flat().map((tag) => tag.trim()).filter(Boolean))];
+}
+
 function mapPostRow(row: Record<string, unknown>): SourcePostRecord {
+  const sourceTags = parseJsonArray(row.source_tags_json);
+  const userTags = parseJsonArray(row.user_tags_json);
+  const fallbackTags = parseJsonArray(row.tags_json);
+  const mergedTags = mergeTags(sourceTags, userTags.length > 0 ? userTags : fallbackTags);
+
   return {
     id: String(row.id),
     sourceUrl: row.source_url ? String(row.source_url) : null,
@@ -30,7 +44,9 @@ function mapPostRow(row: Record<string, unknown>): SourcePostRecord {
     body: String(row.body ?? ""),
     coverImageAssetId: row.cover_image_asset_id ? String(row.cover_image_asset_id) : null,
     authorName: String(row.author_name ?? ""),
-    tags: parseJsonArray(row.tags_json),
+    sourceTags,
+    userTags: userTags.length > 0 ? userTags : fallbackTags,
+    tags: mergedTags,
     notes: String(row.notes ?? ""),
     importStatus: String(row.import_status) as SourcePostRecord["importStatus"],
     importedAt: String(row.imported_at),
@@ -70,12 +86,15 @@ export function createPostService(db: DatabaseClient) {
     const parsed = createPostInputSchema.parse(input);
     const id = `post_${randomUUID()}`;
     const timestamp = nowIso();
+    const sourceTags = parsed.sourceTags;
+    const userTags = parsed.userTags.length > 0 ? parsed.userTags : parsed.tags;
+    const tags = mergeTags(sourceTags, userTags);
 
     db.run(
       `INSERT INTO posts (
         id, source_url, source_type, title, body, cover_image_asset_id, author_name,
-        tags_json, notes, import_status, imported_at, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        tags_json, source_tags_json, user_tags_json, notes, import_status, imported_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         parsed.sourceUrl ?? null,
@@ -84,7 +103,9 @@ export function createPostService(db: DatabaseClient) {
         parsed.body,
         null,
         parsed.authorName,
-        JSON.stringify(parsed.tags),
+        JSON.stringify(tags),
+        JSON.stringify(sourceTags),
+        JSON.stringify(userTags),
         parsed.notes,
         parsed.importStatus,
         timestamp,
@@ -110,6 +131,8 @@ export function createPostService(db: DatabaseClient) {
         title: "Untitled import",
         body: "",
         authorName: "",
+        sourceTags: [],
+        userTags: [],
         importStatus: "link_only",
       });
     },
@@ -143,6 +166,40 @@ export function createPostService(db: DatabaseClient) {
         post: mapPostRow(postRow),
         assets: assetRows.map(mapAssetRow),
       };
+    },
+
+    async updatePostMetadata(input: UpdatePostMetadataInput): Promise<SourcePostRecord> {
+      const parsed = updatePostMetadataSchema.parse(input);
+      const current = db.get<Record<string, unknown>>(`SELECT * FROM posts WHERE id = ?`, [parsed.postId]);
+      if (!current) {
+        throw new Error(`Cannot update post: post ${parsed.postId} does not exist.`);
+      }
+
+      const currentPost = mapPostRow(current);
+      const userTags = parsed.userTags;
+      const tags = mergeTags(currentPost.sourceTags, userTags);
+      const updatedAt = nowIso();
+
+      db.run(
+        `UPDATE posts
+         SET author_name = ?, user_tags_json = ?, tags_json = ?, notes = ?, updated_at = ?
+         WHERE id = ?`,
+        [
+          parsed.authorName,
+          JSON.stringify(userTags),
+          JSON.stringify(tags),
+          parsed.notes,
+          updatedAt,
+          parsed.postId,
+        ],
+      );
+
+      const updated = db.get<Record<string, unknown>>(`SELECT * FROM posts WHERE id = ?`, [parsed.postId]);
+      if (!updated) {
+        throw new Error("Failed to reload post after update.");
+      }
+
+      return mapPostRow(updated);
     },
   };
 }

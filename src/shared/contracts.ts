@@ -18,6 +18,8 @@ export const createPostInputSchema = z.object({
   body: z.string().default(""),
   authorName: z.string().trim().default(""),
   tags: z.array(z.string().trim()).default([]),
+  sourceTags: z.array(z.string().trim()).default([]),
+  userTags: z.array(z.string().trim()).default([]),
   notes: z.string().default(""),
   importStatus: importStatusSchema.default("draft"),
 });
@@ -42,5 +44,20 @@ export const createAssetInputSchema = z.object({
   parseWarnings: z.array(z.string()).default([]),
 });
 
+export const updateAssetMetadataSchema = z.object({
+  assetId: z.string().min(1),
+  authorNameOverride: z.string().trim().nullable().optional(),
+  tags: z.array(z.string().trim()).default([]),
+});
+
+export const updatePostMetadataSchema = z.object({
+  postId: z.string().min(1),
+  authorName: z.string().trim().default(""),
+  userTags: z.array(z.string().trim()).default([]),
+  notes: z.string().default(""),
+});
+
 export type CreatePostInput = z.input<typeof createPostInputSchema>;
 export type CreateAssetInput = z.input<typeof createAssetInputSchema>;
+export type UpdateAssetMetadataInput = z.input<typeof updateAssetMetadataSchema>;
+export type UpdatePostMetadataInput = z.input<typeof updatePostMetadataSchema>;

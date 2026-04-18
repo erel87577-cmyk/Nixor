@@ -1,7 +1,12 @@
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
-import { createAssetInputSchema, type CreateAssetInput } from "@/shared/contracts";
+import {
+  createAssetInputSchema,
+  updateAssetMetadataSchema,
+  type CreateAssetInput,
+  type UpdateAssetMetadataInput,
+} from "@/shared/contracts";
 import type { AssetRecord } from "@/shared/domain";
 import type { DatabaseClient } from "@/main/db/client";
 
@@ -50,60 +55,98 @@ function mapAssetRow(row: Record<string, unknown>): AssetRecord {
 }
 
 export function createAssetService(db: DatabaseClient) {
-  return {
-    async createAsset(input: CreateAssetInput): Promise<AssetRecord> {
-      const parsed = createAssetInputSchema.parse(input);
-      const postExists = db.get<{ id: string }>(`SELECT id FROM posts WHERE id = ?`, [parsed.postId]);
+  async function getAssetById(assetId: string): Promise<AssetRecord | null> {
+    const row = db.get<Record<string, unknown>>(`SELECT * FROM assets WHERE id = ?`, [assetId]);
+    return row ? mapAssetRow(row) : null;
+  }
 
-      if (!postExists) {
-        throw new Error(`Cannot create asset: post ${parsed.postId} does not exist.`);
+  async function createAsset(input: CreateAssetInput): Promise<AssetRecord> {
+    const parsed = createAssetInputSchema.parse(input);
+    const postExists = db.get<{ id: string }>(`SELECT id FROM posts WHERE id = ?`, [parsed.postId]);
+
+    if (!postExists) {
+      throw new Error(`Cannot create asset: post ${parsed.postId} does not exist.`);
+    }
+
+    const id = `asset_${randomUUID()}`;
+    const timestamp = nowIso();
+    const displayName =
+      parsed.displayName && parsed.displayName.length > 0
+        ? parsed.displayName
+        : path.parse(parsed.originalFilename).name;
+
+    db.run(
+      `INSERT INTO assets (
+        id, post_id, kind, display_name, author_name_override, tags_json, original_filename,
+        original_extension, storage_key, preview_key, mime_type, file_size, checksum,
+        character_name, opening_message, description_summary, raw_parsed_metadata_json,
+        parse_status, parse_warnings_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        parsed.postId,
+        parsed.kind,
+        displayName,
+        parsed.authorNameOverride ?? null,
+        JSON.stringify(parsed.tags),
+        parsed.originalFilename,
+        path.extname(parsed.originalFilename),
+        parsed.storageKey ?? null,
+        parsed.previewKey ?? null,
+        parsed.mimeType ?? null,
+        parsed.fileSize ?? null,
+        parsed.checksum ?? null,
+        parsed.characterName ?? null,
+        parsed.openingMessage ?? null,
+        parsed.descriptionSummary ?? null,
+        JSON.stringify(parsed.rawParsedMetadata),
+        parsed.parseStatus,
+        JSON.stringify(parsed.parseWarnings),
+        timestamp,
+        timestamp,
+      ],
+    );
+
+    const row = db.get<Record<string, unknown>>(`SELECT * FROM assets WHERE id = ?`, [id]);
+    if (!row) {
+      throw new Error("Failed to create asset.");
+    }
+
+    return mapAssetRow(row);
+  }
+
+  return {
+    createAsset,
+
+    getAssetById,
+
+    async updateAssetMetadata(input: UpdateAssetMetadataInput): Promise<AssetRecord> {
+      const parsed = updateAssetMetadataSchema.parse(input);
+      const current = await getAssetById(parsed.assetId);
+
+      if (!current) {
+        throw new Error(`Cannot update asset: asset ${parsed.assetId} does not exist.`);
       }
 
-      const id = `asset_${randomUUID()}`;
       const timestamp = nowIso();
-      const displayName =
-        parsed.displayName && parsed.displayName.length > 0
-          ? parsed.displayName
-          : path.parse(parsed.originalFilename).name;
-
       db.run(
-        `INSERT INTO assets (
-          id, post_id, kind, display_name, author_name_override, tags_json, original_filename,
-          original_extension, storage_key, preview_key, mime_type, file_size, checksum,
-          character_name, opening_message, description_summary, raw_parsed_metadata_json,
-          parse_status, parse_warnings_json, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `UPDATE assets
+         SET author_name_override = ?, tags_json = ?, updated_at = ?
+         WHERE id = ?`,
         [
-          id,
-          parsed.postId,
-          parsed.kind,
-          displayName,
           parsed.authorNameOverride ?? null,
           JSON.stringify(parsed.tags),
-          parsed.originalFilename,
-          path.extname(parsed.originalFilename),
-          parsed.storageKey ?? null,
-          parsed.previewKey ?? null,
-          parsed.mimeType ?? null,
-          parsed.fileSize ?? null,
-          parsed.checksum ?? null,
-          parsed.characterName ?? null,
-          parsed.openingMessage ?? null,
-          parsed.descriptionSummary ?? null,
-          JSON.stringify(parsed.rawParsedMetadata),
-          parsed.parseStatus,
-          JSON.stringify(parsed.parseWarnings),
           timestamp,
-          timestamp,
+          parsed.assetId,
         ],
       );
 
-      const row = db.get<Record<string, unknown>>(`SELECT * FROM assets WHERE id = ?`, [id]);
-      if (!row) {
-        throw new Error("Failed to create asset.");
+      const updated = await getAssetById(parsed.assetId);
+      if (!updated) {
+        throw new Error("Failed to reload asset after update.");
       }
 
-      return mapAssetRow(row);
+      return updated;
     },
   };
 }
